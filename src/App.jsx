@@ -1,6 +1,14 @@
 // /  Topics covered: useState, useEffect, props, conditional
 //  rendering, list rendering, localStorage, fetch API
 import { useState, useEffect } from "react";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  NavLink,
+  useNavigate,
+  useParams,
+} from "react-router-dom";
 
 // clothes images from Unsplash
 
@@ -17,51 +25,60 @@ const images = [
 const categories = ["All", "Shirts", "T-Shirts", "Pants", "Trousers", "Formals"];
 
 // Shows the logo and cart button at the top of the page
-// Props: cartCount (number), page (string), setPage (function)
-function Navbar({ cartCount, page, setPage }) {
+// Props: cartCount (number), wishlistCount (number)
+function Navbar({ cartCount, wishlistCount }) {
   return (
     <div className="bg-amber-100 text-amber-900 px-6 py-4 flex justify-between items-center shadow-md">
-
-      {/* for going back to homepage */}
-      <button
-        onClick={() => setPage("home")}
-        className="text-3xl font-bold  justufy-between hover:text-amber-300 transition"
+      <NavLink
+        to="/"
+        className="text-3xl font-bold hover:text-amber-300 transition"
       >
-        👕CLOTHIFY :)👕
-      </button>
+        👕CLOTHIFY:)👕
+      </NavLink>
 
-      {/* Home and Cart button */}
-
+      {/* Home, Wishlist and Cart links */}
       <div className="flex items-center gap-2 rounded-full">
-
-        <button
-          onClick={() => setPage("home")}
-          className={`text-sm font-medium "}`}
+        <NavLink
+          to="/"
+          className={({ isActive }) =>
+            `text-sm font-medium ${isActive ? "text-amber-700" : ""}`
+          }
         >
           Home
-        </button>
+        </NavLink>
 
-        {/* Cart button and item count */}
-        <button
-          onClick={() => setPage("cart")}
+        {/* Wishlist link and icon */}
+        <NavLink
+          to="/wishlist"
+          className="relative bg-white text-amber-700 font-bold px-4 py-2 rounded-full text-sm hover:bg-amber-50 transition"
+        >
+          ❤️ Wishlist
+          {wishlistCount > 0 && (
+            <span className="absolute -top-2 -right-2 bg-amber-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
+              {wishlistCount}
+            </span>
+          )}
+        </NavLink>
+
+        {/* Cart link and icon */}
+        <NavLink
+          to="/cart"
           className="relative bg-white text-amber-700 font-bold px-4 py-2 rounded-full text-sm hover:bg-amber-50 transition"
         >
           🛒 cart
-          {/* Only show the red badge if cart has items */}
-
           {cartCount > 0 && (
             <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
               {cartCount}
             </span>
           )}
-        </button>
+        </NavLink>
 
       </div>
     </div>
   );
 }
 
-// Props: search (string), setSearch (function)
+// Props: search (string), setSearch (function) for searching any item 
 function Hero({ search, setSearch }) {
   return (
     <div className="bg-linear-to-r from-amber-100 to-amber-100 text-amber-900 text-center py-14 px-4">
@@ -93,10 +110,11 @@ function Hero({ search, setSearch }) {
   );
 }
 
-// Shows a single product with image, name, price, buttons
-// Props: product, addToCart, wishlist, toggleWishlist, setPage, setDetailId
+// Shows a single product with image, name, price, buttons with description 
+// Props: product, addToCart, wishlist, toggleWishlist
 
-function ProductCard({ product, addToCart, wishlist, toggleWishlist, setPage, setDetailId }) {
+function ProductCard({ product, addToCart, wishlist, toggleWishlist }) {
+  const navigate = useNavigate();
 
   // Check if this product is already in the wishlist
   const isInWishlist = wishlist.some((item) => item.id === product.id);
@@ -104,17 +122,14 @@ function ProductCard({ product, addToCart, wishlist, toggleWishlist, setPage, se
   return (
     <div className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition">
 
-      {/* Product Image - clicking opens the detail page */}
+      {/* Product Image - clicking opens the description page */}
     
       <div className="relative">
         <img
           src={product.image}
           alt={product.category}
           className="h-52 w-full object-cover cursor-pointer"
-          onClick={() => {
-            setDetailId(product.id);
-            setPage("detail");
-          }}
+          onClick={() => navigate(`/detail/${product.id}`)}
         />
         {/* Wishlist heart button */}
         <button
@@ -142,7 +157,7 @@ function ProductCard({ product, addToCart, wishlist, toggleWishlist, setPage, se
         {/* Add to Cart button */}
         <button
           onClick={() => addToCart(product)}
-          className="mt-3 w-full bg-amber-700 text-white py-2 rounded-lg text-sm font-semibold hover:bg-amber-600 transition"
+          className="mt-3 w-full bg-amber-700 text-white py-2 rounded-full text-sm font-semibold hover:bg-amber-600 transition"
         >
           Add to Cart 🛒
         </button>
@@ -153,7 +168,7 @@ function ProductCard({ product, addToCart, wishlist, toggleWishlist, setPage, se
 }
 // Shows the hero, search bar, category filter, and product grid
 
-function Home({ addToCart, wishlist, toggleWishlist, search, setSearch, setPage, setDetailId }) {
+function Home({ addToCart, wishlist, toggleWishlist, search, setSearch }) {
 
   // products: the list of items fetched from the API
   const [products, setProducts] = useState([]);
@@ -166,20 +181,20 @@ function Home({ addToCart, wishlist, toggleWishlist, search, setSearch, setPage,
 
 
   // useEffect runs once when the images first loads
-  // // use it to fetch products from the internet
+  //use it to fetch products from the internet
   useEffect(() => {
     fetch("https://jsonplaceholder.typicode.com/posts")
       .then((res) => res.json())
       .then((data) => {
-      // Take only first 30 posts and add clothing-specific fields
+      // Take only first 40 posts and add items discription written below the images 
 
-        const mapped = data.slice(0, 30).map((item, index) => ({
+        const mapped = data.slice(0, 40).map((item, index) => ({
           id: item.id,
           title: item.title.slice(0, 40),
           category: categories[(index % (categories.length - 1)) + 1],
           price: item.id * 100 + 399,
           image: images[index % images.length],
-          description: "Premium quality clothing for daily wear.",
+          description: "Premium quality clothing for daily wear with clothify.",
         }));
         setProducts(mapped);
         setLoading(false);
@@ -243,8 +258,6 @@ function Home({ addToCart, wishlist, toggleWishlist, search, setSearch, setPage,
               addToCart={addToCart}
               wishlist={wishlist}
               toggleWishlist={toggleWishlist}
-              setPage={setPage}
-              setDetailId={setDetailId}
             />
           ))}
         </div>
@@ -254,7 +267,11 @@ function Home({ addToCart, wishlist, toggleWishlist, search, setSearch, setPage,
   );
 }
 // description about the item which is selected
-function ProductDetail({ detailId, addToCart, setPage }) {
+function ProductDetail({ addToCart }) {       
+  // gets the :id from /detail/:id
+  const { id } = useParams();   
+  const detailId = Number(id);
+  const navigate = useNavigate();
 
   const [product, setProduct] = useState(null);
   const [added, setAdded] = useState(false);
@@ -290,7 +307,7 @@ function ProductDetail({ detailId, addToCart, setPage }) {
 
       {/* Back button */}
       <button
-        onClick={() => setPage("home")}
+        onClick={() => navigate("/")}
         className="mb-6 text-amber-900 text-sm font-medium"
       >
       Back to Home
@@ -324,13 +341,13 @@ function ProductDetail({ detailId, addToCart, setPage }) {
               addToCart(product);
               setAdded(true);
             }}
-            className="bg-amber-700 text-white px-6 py-3 rounded-lg font-semibold hover:bg-amber-600 transition"
+            className="bg-amber-700 text-white px-6 py-3 rounded-full font-semibold hover:bg-amber-600 transition"
           >
             {added ? "Added ✓" : "Add to Cart 🛒"}
           </button>
           {added && (
             <button
-              onClick={() => setPage("cart")}
+              onClick={() => navigate("/cart")}
               className="mt-3 text-sm text-amber-700 font-medium "
             >
               Go to Cart 
@@ -342,25 +359,98 @@ function ProductDetail({ detailId, addToCart, setPage }) {
     </div>
   );
 }
+//  shown at wishlist
+function Wishlist({ wishlist, addToCart, toggleWishlist }) {
+  const navigate = useNavigate();
+
+  if (wishlist.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center text-center px-4">
+        <p className="text-4xl mb-4">❤️</p>
+        <h2 className="text-2xl font-bold text-gray-700 mb-2">Your wishlist is empty!</h2>
+        <p className="text-gray-400 text-sm mb-6">Save items you love from Clothify.</p>
+        <button
+          onClick={() => navigate("/")}
+          className=" text-amber-500 px-6 py-3 rounded-full font-semibold text-sm hover:bg-amber-200 transition"
+        >
+          Browse Store
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-gray-50 min-h-screen px-4 py-8">
+      <div className="max-w-2xl mx-auto">
+
+        <h2 className="text-2xl font-bold text-gray-800 mb-6">
+          Your Wishlist ❤️ ({wishlist.length} {wishlist.length === 1 ? "item" : "items"})
+        </h2>
+
+        <div className="space-y-4">
+          {wishlist.map((item) => (
+            <div
+              key={item.id}
+              className="bg-white rounded-xl shadow-sm p-4 flex items-center gap-4"
+            >
+              <img
+                src={item.image}
+                alt={item.title}
+                className="w-16 h-16 object-cover rounded-lg shrink-0"
+              />
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-gray-800 text-sm capitalize truncate">{item.title}</p>
+                <p className="text-amber-700 font-bold text-sm mt-0.5">₹{item.price}</p>
+              </div>
+              <div className="flex flex-col items-end gap-2">
+                <button
+                  onClick={() => addToCart(item)}
+                  className="bg-amber-700 text-white px-4 py-2 rounded-full text-xs font-semibold hover:bg-amber-600 transition"
+                >
+                  Add to Cart
+                </button>
+                <button
+                  onClick={() => toggleWishlist(item)}
+                  className="text-red-500 text-xs font-medium hover:text-red-700 transition italic"
+                >
+                  Remove Item
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <button
+          onClick={() => navigate("/")}
+          className="mt-6 w-full text-center rounded-full text-sm text-amber-700 hover:text-amber-300 font-medium transition"
+        >
+          Continue Shopping
+        </button>
+
+      </div>
+    </div>
+  );
+}
+
 // Shows all items the user added, with qty controls and delete
 
-function Cart({ cart, wishlist, removeFromCart, updateQty, addToCart, toggleWishlist, setPage }) {
+function Cart({ cart, removeFromCart, updateQty }) {
+  const navigate = useNavigate();
 
   // Calculate total price
   const total = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
   const hasCartItems = cart.length > 0;
-  const hasWishlistItems = wishlist.length > 0;
 
-  // Show empty cart message only when cart and wishlist are empty
-  if (!hasCartItems && !hasWishlistItems) {
+  // Show empty cart message when cart is empty
+  if (!hasCartItems) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center text-center px-4">
         <p className="text-6xl mb-4">🛒</p>
         <h2 className="text-2xl font-bold text-gray-700 mb-2">Your cart is empty!</h2>
         <p className="text-gray-400 text-sm mb-6">Add something from clothify :(</p>
         <button
-          onClick={() => setPage("home")}
-          className="bg-amber-700 text-white px-6 py-3 rounded-xl font-semibold text-sm hover:bg-amber-600 transition"
+          onClick={() => navigate("/")}
+          className="bg-amber-700 text-white px-6 py-3 rounded-full font-semibold text-sm hover:bg-amber-600 transition"
         >
          continue shopping
         </button>
@@ -376,137 +466,82 @@ function Cart({ cart, wishlist, removeFromCart, updateQty, addToCart, toggleWish
           Your Cart 🛒 ({cart.length} {cart.length === 1 ? "item" : "items"})
         </h2>
 
-        {hasCartItems ? (
-          <>
-            {/* List of cart items */}
-            <div className="space-y-4">
-              {cart.map((item) => (
-                <div
-                  key={item.cartId}
-                  className="bg-white rounded-xl shadow-sm p-4 flex items-center gap-4"
-                >
-                  {/* Product image */}
-                  <img
-                    src={item.image}
-                    alt={item.title}
-                    className="w-16 h-16 object-cover rounded-lg shrink-0"
-                  />
-
-                  {/* Product info */}
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-gray-800 text-sm capitalize truncate">{item.title}</p>
-                    <p className="text-amber-700 font-bold text-sm mt-0.5">₹{item.price} each</p>
-
-                    {/* Quantity controls */}
-                    <div className="flex items-center gap-2 mt-2">
-                      <button
-                        onClick={() => updateQty(item.cartId, item.qty - 1)}
-                        className="w-7 h-7 bg-gray-100 rounded-full text-sm font-bold hover:bg-gray-200 transition"
-                        aria-label="Decrease quantity"
-                      >
-                        -
-                      </button>
-                      <span className="text-sm font-semibold w-4 text-center">{item.qty}</span>
-                      <button
-                        onClick={() => updateQty(item.cartId, item.qty + 1)}
-                        className="w-7 h-7 bg-gray-100 rounded-full text-sm font-bold hover:bg-gray-200 transition"
-                        aria-label="Increase quantity"
-                      >
-                        +
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Subtotal + delete */}
-                  <div className="text-right shrink-0">
-                    <p className="font-bold text-gray-800">₹{item.price * item.qty}</p>
-                    <button
-                      onClick={() => removeFromCart(item.cartId)}
-                      className="mt-2 text-amber-600 hover:text-red-600 text-xs font-medium transition italic"
-                    >
-                       Remove Item
-                    </button>
-                  </div>
-
-                </div>
-              ))}
-            </div>
-
-            {/* Order total price*/}
-            <div className="bg-white rounded-xl shadow-sm p-5 mt-6">
-              <div className="flex justify-between text-sm text-gray-500 mb-2">
-                <span>Subtotal</span>
-                <span>₹{total}</span>
-              </div>
-              <div className="flex justify-between text-sm text-gray-500 mb-3">
-                <span>Shipping</span>
-                <span className="text-green-600 font-semibold">99</span>
-              </div>
-              <div className="border-t pt-3 flex justify-between font-bold text-gray-800 text-lg">
-                <span>Total</span>
-                <span>₹{total + 99}</span>
-              </div>
-              <button className="mt-5 w-full bg-amber-700 text-white py-3 rounded-xl font-bold text-sm hover:bg-amber-600 transition">
-                Checkout
-              </button>
-
-            </div>
-          </>
-        ) : (
-          <div className="bg-white rounded-xl shadow-sm p-5 mb-6 flex flex-col items-center text-center">
-            <p className="text-4xl mb-2">🛒</p>
-            <h3 className="text-lg font-semibold text-gray-800">Your cart is empty.</h3>
-            <p className="text-sm text-gray-400 mt-1 mb-4">browse the store!</p>
-            <button
-              onClick={() => setPage("home")}
-              className="bg-amber-700 text-white px-5 py-2 rounded-xl text-sm font-semibold hover:bg-amber-600 transition"
+        {/* List of cart items */}
+        <div className="space-y-4">
+          {cart.map((item) => (
+            <div
+              key={item.cartId}
+              className="bg-white rounded-xl shadow-sm p-4 flex items-center gap-4"
             >
-            Continue Shopping 🛍️
-            </button>
-          </div>
-        )}
+              {/* Product image */}
+              <img
+                src={item.image}
+                alt={item.title}
+                className="w-16 h-16 object-cover rounded-lg shrink-0"
+              />
 
-        {hasWishlistItems && (
-          <div className="bg-white rounded-xl shadow-sm p-5 mt-6">
-            <h3 className="text-xl font-bold text-gray-800 mb-4">Wishlist items ({wishlist.length})</h3>
-            <div className="space-y-4">
-              {wishlist.map((item) => (
-                <div
-                  key={item.id}
-                  className="bg-gray-50 rounded-xl p-4 flex items-center gap-4"
-                >
-                  <img
-                    src={item.image}
-                    alt={item.title}
-                    className="w-16 h-16 object-cover rounded-lg shrink-0"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-gray-800 text-sm capitalize truncate">{item.title}</p>
-                    <p className="text-amber-700 font-bold text-sm mt-0.5">₹{item.price}</p>
-                  </div>
-                  <div className="flex flex-col items-end gap-2">
-                    <button
-                      onClick={() => addToCart(item)}
-                      className="bg-amber-700 text-white px-4 py-2 rounded-lg text-xs font-semibold hover:bg-amber-600 transition"
-                    >
-                      Add to Cart
-                    </button>
-                    <button
-                      onClick={() => toggleWishlist(item)}
-                      className="text-red-500 text-xs font-medium hover:text-red-700 transition italic"
-                    >
-                      Remove Item
-                    </button>
-                  </div>
+              {/* Product info */}
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-gray-800 text-sm capitalize truncate">{item.title}</p>
+                <p className="text-amber-700 font-bold text-sm mt-0.5">₹{item.price} each</p>
+
+                {/* Quantity controls */}
+                <div className="flex items-center gap-2 mt-2">
+                  <button
+                    onClick={() => updateQty(item.cartId, item.qty - 1)}
+                    className="w-7 h-7 bg-gray-100 rounded-full text-sm font-bold hover:bg-gray-200 transition"
+                    aria-label="Decrease quantity"
+                  >
+                    -
+                  </button>
+                  <span className="text-sm font-semibold w-4 text-center">{item.qty}</span>
+                  <button
+                    onClick={() => updateQty(item.cartId, item.qty + 1)}
+                    className="w-7 h-7 bg-gray-100 rounded-full text-sm font-bold hover:bg-gray-200 transition"
+                    aria-label="Increase quantity"
+                  >
+                    +
+                  </button>
                 </div>
-              ))}
+              </div>
+
+              {/* Subtotal + delete */}
+              <div className="text-right shrink-0">
+                <p className="font-bold text-gray-800">₹{item.price * item.qty}</p>
+                <button
+                  onClick={() => removeFromCart(item.cartId)}
+                  className="mt-2 text-amber-600 hover:text-red-600 text-xs font-medium transition italic"
+                >
+                   Remove Item
+                </button>
+              </div>
+
             </div>
+          ))}
+        </div>
+
+        {/* Order total price */}
+        <div className="bg-white rounded-xl shadow-sm p-5 mt-6">
+          <div className="flex justify-between text-sm text-gray-500 mb-2">
+            <span>Subtotal</span>
+            <span>₹{total}</span>
           </div>
-        )}
+          <div className="flex justify-between text-sm text-gray-500 mb-3">
+            <span>Shipping</span>
+            <span className="text-green-600 font-semibold">99</span>
+          </div>
+          <div className="border-t pt-3 flex justify-between font-bold text-gray-800 text-lg">
+            <span>Total</span>
+            <span>₹{total + 99}</span>
+          </div>
+          <button className="mt-5 w-full bg-amber-700 text-white py-3 rounded-xl font-bold text-sm hover:bg-amber-600 transition">
+            Checkout
+          </button>
+        </div>
 
         <button
-          onClick={() => setPage("home")}
-          className="mt-4 w-full text-center text-sm text-amber-700 hover:text-amber-300 font-medium transition"
+          onClick={() => navigate("/")}
+          className="mt-4 w-full text-center rounded-full text-sm text-amber-700 hover:text-amber-300 font-medium transition"
         >
           Continue Shopping
         </button>
@@ -515,21 +550,13 @@ function Cart({ cart, wishlist, removeFromCart, updateQty, addToCart, toggleWish
     </div>
   );
 }
-// This holds all state and decides which page to show
-
+// This holds all state and renders the router
 export default function App() {
-
-  // Which page are we on?
-  const [page, setPage] = useState("home");
-
-  // Which product to show on the detail page
-  const [detailId, setDetailId] = useState(null);
 
   // Search text typed by the user
   const [search, setSearch] = useState("");
 
-  // Cartloaded from localStorage 
-
+  // Cart loaded from localStorage
   const [cart, setCart] = useState(() => {
     const saved = localStorage.getItem("clothify_cart");
     return saved ? JSON.parse(saved) : [];
@@ -551,7 +578,6 @@ export default function App() {
     localStorage.setItem("clothify_wishlist", JSON.stringify(wishlist));
   }, [wishlist]);
 
-
   // Add product to cart
   function addToCart(product) {
     setCart((prevCart) => {
@@ -571,8 +597,7 @@ export default function App() {
     setCart((prevCart) => prevCart.filter((item) => item.cartId !== cartId));
   }
 
-  // Update quantity 
-  
+  // Update quantity
   function updateQty(cartId, newQty) {
     if (newQty <= 0) {
       removeFromCart(cartId);
@@ -595,47 +620,52 @@ export default function App() {
     });
   }
 
-  // Total item count for the cart badge
   const cartCount = cart.reduce((total, item) => total + item.qty, 0);
-
+  const wishlistCount = wishlist.length;
 
   return (
-    <div>
-      {/* Navbar is always shown */}
-      <Navbar cartCount={cartCount} page={page} setPage={setPage} />
+    <BrowserRouter>
+      {/* Navbar is always shown — lives outside Routes so it persists across pages */}
+      <Navbar cartCount={cartCount} wishlistCount={wishlistCount} />
 
-      {/* Show the right page */}
-      {page === "home" && (
-        <Home
-          addToCart={addToCart}
-          wishlist={wishlist}
-          toggleWishlist={toggleWishlist}
-          search={search}
-          setSearch={setSearch}
-          setPage={setPage}
-          setDetailId={setDetailId}
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <Home
+              addToCart={addToCart}
+              wishlist={wishlist}
+              toggleWishlist={toggleWishlist}
+              search={search}
+              setSearch={setSearch}
+            />
+          }
         />
-      )}
-
-      {page === "detail" && (
-        <ProductDetail
-          detailId={detailId}
-          addToCart={addToCart}
-          setPage={setPage}
+        <Route
+          path="/detail/:id"
+          element={<ProductDetail addToCart={addToCart} />}
         />
-      )}
-
-      {page === "cart" && (
-        <Cart
-          cart={cart}
-          wishlist={wishlist}
-          removeFromCart={removeFromCart}
-          updateQty={updateQty}
-          addToCart={addToCart}
-          toggleWishlist={toggleWishlist}
-          setPage={setPage}
+        <Route
+          path="/cart"
+          element={
+            <Cart
+              cart={cart}
+              removeFromCart={removeFromCart}
+              updateQty={updateQty}
+            />
+          }
         />
-      )}
-    </div>
+        <Route
+          path="/wishlist"
+          element={
+            <Wishlist
+              wishlist={wishlist}
+              addToCart={addToCart}
+              toggleWishlist={toggleWishlist}
+            />
+          }
+        />
+      </Routes>
+    </BrowserRouter>
   );
 }
