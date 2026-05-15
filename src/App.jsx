@@ -81,10 +81,10 @@ function Navbar({ cartCount, wishlistCount }) {
 // Props: search (string), setSearch (function) for searching any item 
 function Hero({ search, setSearch }) {
   return (
-    <div className="bg-linear-to-r from-amber-100 to-amber-100 text-amber-900 text-center py-14 px-4">
+    <div className="bg-amber-800 text-white text-center py-10 px-2">
 
       <h1 className="text-4xl font-bold mb-4 italic hover:text-black transition">Welcome to Clothify 🛍️</h1>
-      <p className="text-amber-900 mb-4 text-lg text-center font-bold italic hover:text-black transition">Find your perfect style with clothify!</p>
+      <p className="text-white mb-4 text-lg text-center font-bold italic hover:text-black transition">Find your perfect style with clothify!</p>
 
       {/* Search bar */}
       <div className="max-w-md mx-auto relative">
@@ -93,7 +93,7 @@ function Hero({ search, setSearch }) {
           placeholder="Search..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full px-5 py-3 rounded-full text-black text-sm focus:outline-none focus:ring-2 focus:ring-white shadow-lg hover:text-amber-800"
+          className="w-full px-5 py-3 rounded-full text-black text-sm focus:outline-none focus:ring-2 focus:ring-black shadow-lg hover:text-amber-800"
         />
         {/* Show X button only when user has typed something */}
         {search && (
